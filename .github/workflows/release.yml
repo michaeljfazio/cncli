@@ -22,39 +22,38 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
 
-  publish:
-    name: Publish
+  build:
+    name: Build
     needs: [ release ]
     strategy:
       fail-fast: true
       matrix:
-        toolchain: [ stable ]
-        cross: [ false ]
-        os: [ windows-latest, ubuntu-latest, macos-latest ]
-        include:
+        config:
           - os: windows-latest
-            shell: msys2 {0}
             target: x86_64-pc-windows-gnu
+            shell: msys2 {0}
             binary: cncli.exe
           - os: ubuntu-latest
-            shell: bash
             target: x86_64-unknown-linux-gnu
+            shell: bash
             binary: cncli
           - os: macos-latest
-            shell: bash
             target: x86_64-apple-darwin
-            binary: cncli.exe
-    runs-on: ${{ matrix.os }}
+            shell: bash
+            binary: cncli
+        toolchain: [ stable ]
+        cross: [ false ]
+    runs-on: ${{ matrix.config.os }}
     defaults:
       run:
-        shell: ${{ matrix.shell }}
+        shell: ${{ matrix.config.shell }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           submodules: true # recurse submodules
       - name: Install Dependencies (Windows MingGW64)
-        if: matrix.os == 'windows-latest'
+        if: matrix.config.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           update: true
@@ -64,10 +63,10 @@ jobs:
             base-devel
             mingw64/mingw-w64-x86_64-rust
       - name: Install Dependencies (MacOS)
-        if: matrix.os == 'macos-latest'
+        if: matrix.config.os == 'macos-latest'
         run: brew install autoconf automake libtool
       - name: Install Dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.config.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y automake build-essential pkg-config libffi-dev libgmp-dev libssl-dev libtinfo-dev libsystemd-dev zlib1g-dev make g++ tmux git jq wget libncursesw5 libtool autoconf
@@ -78,7 +77,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
-          target: ${{ matrix.target }}
+          target: ${{ matrix.config.target }}
           override: true
           default: true
       - name: Build
@@ -86,17 +85,17 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --locked --verbose --features external-contrib-build --target ${{ matrix.target }}
+          args: --release --locked --verbose --features external-contrib-build --target ${{ matrix.config.target }}
       - name: Compress
         shell: bash
         working-directory: target/release/
-        run: tar -czvf cncli-${{ matrix.target }}.tar.gz ${{ matrix.binary }}
+        run: tar -czvf cncli-${{ matrix.config.target }}.tar.gz ${{ matrix.config.binary }}
       - name: Upload
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: cncli-${{ matrix.target }}.tar.gz
-          asset_name: cncli-${{ matrix.target }}.tar.gz
+          asset_path: cncli-${{ matrix.config.target }}.tar.gz
+          asset_name: cncli-${{ matrix.config.target }}.tar.gz
           asset_content_type: application/gzip
