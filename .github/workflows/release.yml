@@ -1,0 +1,62 @@
+on: [push, pull_request]
+
+jobs:
+
+  release:
+    name: Release
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            shell: msys2 {0}
+          - os: ubuntu-latest
+            shell: bash
+          - os: macos-latest
+            shell: zsh
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true # recurse submodules
+      - name: Install Dependencies (Windows MingGW64)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          system: MINGW64
+          install: >-
+            git
+            base-devel
+            mingw64/mingw-w64-x86_64-rust
+      - name: Install Dependencies (MacOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install autoconf automake libtool
+      - name: Install Dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y automake build-essential pkg-config libffi-dev libgmp-dev libssl-dev libtinfo-dev libsystemd-dev zlib1g-dev make g++ tmux git jq wget libncursesw5 libtool autoconf
+      - name: Build Libsodium
+        run: autoreconf -vfi && ./configure && make
+        working-directory: contrib/libsodium
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features --external-contrib-build
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --features --external-contrib-build

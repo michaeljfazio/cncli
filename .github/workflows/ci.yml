@@ -53,8 +53,8 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: cncli-x86_64-pc-windows-gnu
-          path: target/release/cncli
+          name: cncli-x86_64-pc-windows-gnu.exe
+          path: target/release/cncli.exe
 
   macos:
     name: Build MacOS
@@ -117,14 +117,3 @@ jobs:
         with:
           name: cncli-x86_64-unknown-linux-gnu
           path: target/release/cncli
-
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    needs: [ lint, windows, macos, linux ]
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v2
-      - name: List Artifacts
-        run: ls -la
-    
