@@ -33,14 +33,17 @@ jobs:
             target: x86_64-pc-windows-gnu
             shell: msys2 {0}
             binary: cncli.exe
+            features: [ external-contrib-build ]
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             shell: bash
             binary: cncli
+            features: [ ]
           - os: macos-latest
             target: x86_64-apple-darwin
             shell: bash
             binary: cncli
+            features: [ ]
         toolchain: [ stable ]
         cross: [ false ]
     runs-on: ${{ matrix.config.os }}
@@ -71,6 +74,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y automake build-essential pkg-config libffi-dev libgmp-dev libssl-dev libtinfo-dev libsystemd-dev zlib1g-dev make g++ tmux git jq wget libncursesw5 libtool autoconf
       - name: Build Libsodium
+        if: contains(matrix.config.features, 'external-contrib-build')
         run: autoreconf -vfi && ./configure && make
         working-directory: contrib/libsodium
       - name: Install Rust Toolchain
@@ -85,10 +89,10 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --locked --verbose --features external-contrib-build --target ${{ matrix.config.target }}
+          args: --release --locked --verbose --features "${{ join(matrix.config.features, ',') }}" --target ${{ matrix.config.target }}
       - name: Compress
         shell: bash
-        working-directory: target/release/
+        working-directory: target/release/${{ matrix.config.target }}/
         run: tar -czvf cncli-${{ matrix.config.target }}.tar.gz ${{ matrix.config.binary }}
       - name: Upload
         uses: actions/upload-release-asset@v1
