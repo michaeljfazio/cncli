@@ -110,11 +110,13 @@ jobs:
       - name: Test
         uses: actions-rs/cargo@v1
         with:
+          use-cross: true
           command: test
           args: --target ${{ matrix.target }}
       - name: Build
         uses: actions-rs/cargo@v1
         with:
+          use-cross: true
           command: build
           args: --release --target ${{ matrix.target }}
       - name: Upload Artifact
