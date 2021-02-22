@@ -38,7 +38,7 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           update: true
-          system: MINGW64
+          msystem: MINGW64
           install: >-
             git
             base-devel
