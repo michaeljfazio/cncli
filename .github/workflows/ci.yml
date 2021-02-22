@@ -48,10 +48,15 @@ jobs:
         working-directory: contrib/libsodium
       - name: Test
         run: cargo test --features external-contrib-build
+      - name: Build
+        run: cargo build --release --features external-contrib-build
 
   macos:
     name: Build MacOS
     runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [ x86_64-apple-darwin ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -63,15 +68,29 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: ${{ matrix.target }}
           override: true
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: cncli-${{ matrix.target }}
+          path: target/release/cncli
 
   linux:
     name: Build Linux
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [ i686-pc-windows-msvc ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -85,8 +104,36 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: ${{ matrix.target }}
           override: true
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: cncli-${{ matrix.target }}
+          path: target/release/cncli
+
+  # create-release:
+  #   name: Create Release
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #   steps:
+  #     - name: Create Release
+  #       id: create_release
+  #       uses: actions/create-release@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         tag_name: ${{ github.ref }}
+  #         release_name: Release ${{ github.ref }}
+  #         draft: false
+  #         prerelease: false
