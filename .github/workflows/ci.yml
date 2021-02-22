@@ -106,7 +106,6 @@ jobs:
       - name: Test
         uses: actions-rs/cargo@v1
         with:
-          use-cross: true
           command: test
       - name: Build
         uses: actions-rs/cargo@v1
