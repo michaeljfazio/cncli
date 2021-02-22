@@ -24,6 +24,7 @@ jobs:
 
   publish:
     name: Publish
+    needs: [ release ]
     strategy:
       fail-fast: true
       matrix:
