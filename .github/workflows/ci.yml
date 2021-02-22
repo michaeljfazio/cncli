@@ -50,13 +50,15 @@ jobs:
         run: cargo test --features external-contrib-build
       - name: Build
         run: cargo build --release --features external-contrib-build
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: cncli-x86_64-pc-windows-gnu
+          path: target/release/cncli
 
   macos:
     name: Build MacOS
     runs-on: macos-latest
-    strategy:
-      matrix:
-        target: [ x86_64-apple-darwin ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -68,30 +70,25 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ matrix.target }}
           override: true
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --target ${{ matrix.target }}
       - name: Build
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target ${{ matrix.target }}
+          args: --release
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: cncli-${{ matrix.target }}
+          name: cncli-x86_64-apple-darwin
           path: target/release/cncli
 
   linux:
     name: Build Linux
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: [ x86_64-unknown-linux-gnu ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -105,22 +102,19 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ matrix.target }}
           override: true
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: test
-          args: --target ${{ matrix.target }}
       - name: Build
         uses: actions-rs/cargo@v1
         with:
-          use-cross: true
           command: build
-          args: --release --target ${{ matrix.target }}
+          args: --release
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: cncli-${{ matrix.target }}
+          name: cncli-x86_64-unknown-linux-gnu
           path: target/release/cncli
