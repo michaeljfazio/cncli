@@ -1,20 +1,48 @@
-on: [push, pull_request]
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
 
 jobs:
 
   release:
-    name: Release
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+
+  publish:
+    name: Publish
     strategy:
       fail-fast: true
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [ stable ]
+        cross: [ false ]
+        os: [ windows-latest, ubuntu-latest, macos-latest ]
         include:
           - os: windows-latest
             shell: msys2 {0}
+            target: [ x86_64-pc-windows-gnu ]
+            binary: cncli.exe
           - os: ubuntu-latest
             shell: bash
+            target: [ x86_64-unknown-linux-gnu ]
+            binary: cncli
           - os: macos-latest
             shell: zsh
+            target: [ x86_64-apple-darwin ]
+            binary: cncli.exe
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -48,15 +76,26 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.toolchain }}
+          target: ${{ matrix.target }}
           override: true
-      - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --features --external-contrib-build
+          default: true
       - name: Build
         uses: actions-rs/cargo@v1
         with:
+          use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --features --external-contrib-build
+          args: --release --locked --verbose --features external-contrib-build --target ${{ matrix.target }}
+      - name: Compress
+        shell: bash
+        working-directory: target/release/
+        run: tar -czvf cncli-${{ matrix.target }}.tar.gz ${{ matrix.binary }}
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: cncli-${{ matrix.target }}.tar.gz
+          asset_name: cncli-${{ matrix.target }}.tar.gz
+          asset_content_type: application/gzip
