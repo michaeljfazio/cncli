@@ -13,7 +13,7 @@ jobs:
       matrix:
         job:
           - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
-          - { os: ubuntu-latest, target: aarch64-unknown-linux-gnu, toolchain: stable, use-cross: true }
+          - { os: ubuntu-latest, target: aarch64-unknown-linux-gnu, use-cross: true }
           - { os: windows-latest, target: x86_64-pc-windows-gnu, toolchain: stable-x86_64-pc-windows-gnu, features: [ libsodium-sys ] }
           - { os: macos-latest, target: x86_64-apple-darwin }
     steps:
@@ -21,6 +21,17 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true # recurse submodules
+      - name: Cache gmp-mprf binaries
+        uses: actions/cache@v2
+        env:
+          cache-name: gmp-mpfr
+        with:
+          path: ~/.cache/gmp-mpfr-sys
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
       - name: Configure Environment
         run: |
           case ${{ matrix.job.target }} in
@@ -84,19 +95,19 @@ jobs:
         with:
           use-cross: ${{ matrix.job.use-cross }}
           command: clippy
-          args: --release --features "${{ join(matrix.job.features, ',') }}" --target ${{ matrix.job.target }} -- -D warnings
+          args: --release --features "${{ join(matrix.job.features, ',') }}," --target ${{ matrix.job.target }} -- -D warnings
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.job.use-cross }}
           command: test
-          args: --release --features "${{ join(matrix.job.features, ',') }}" --target ${{ matrix.job.target }}
+          args: --release --features "${{ join(matrix.job.features, ',') }}," --target ${{ matrix.job.target }}
       - name: Build
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.job.use-cross }}
           command: build
-          args: --release --features "${{ join(matrix.job.features, ',') }}" --target ${{ matrix.job.target }} --locked
+          args: --release --features "${{ join(matrix.job.features, ',') }}," --target ${{ matrix.job.target }} --locked
       - name: Package
         id: package
         run: |

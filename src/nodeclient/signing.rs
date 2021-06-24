@@ -6,7 +6,9 @@ use blake2b_simd::Params;
 use log::debug;
 use serde::Serialize;
 
-use crate::nodeclient::leaderlog::libsodium::{sodium_crypto_vrf_proof_to_hash, sodium_crypto_vrf_prove, sodium_crypto_vrf_verify};
+use crate::nodeclient::leaderlog::libsodium::{
+    sodium_crypto_vrf_proof_to_hash, sodium_crypto_vrf_prove, sodium_crypto_vrf_verify,
+};
 use crate::nodeclient::leaderlog::read_vrf_key;
 
 #[derive(Debug, Serialize)]
@@ -54,12 +56,13 @@ pub(crate) fn sign_message(pool_vrf_skey: &Path, message: &str) {
                             status: "ok".to_string(),
                             signature: hex::encode(&signature),
                         },
-                    ).unwrap();
+                    )
+                    .unwrap();
                 }
-                Err(error) => { handle_error(error) }
+                Err(error) => handle_error(error),
             }
         }
-        Err(error) => { handle_error(error) }
+        Err(error) => handle_error(error),
     }
 }
 
@@ -80,16 +83,21 @@ pub(crate) fn verify_message(pool_vrf_vkey: &Path, message: &str, pool_vrf_vkey_
                 return;
             }
             // Verify that the vkey the client supplied is the same as the one on-chain
-            let vkey_hash_verify = hex::encode(Params::new()
-                .hash_length(32)
-                .to_state()
-                .update(&*vrf_vkey.key)
-                .finalize()
-                .as_bytes());
+            let vkey_hash_verify = hex::encode(
+                Params::new()
+                    .hash_length(32)
+                    .to_state()
+                    .update(&*vrf_vkey.key)
+                    .finalize()
+                    .as_bytes(),
+            );
             debug!("vkey_hash_verify: {}", &vkey_hash_verify);
 
             if pool_vrf_vkey_hash != vkey_hash_verify {
-                handle_error(format!("Hash of pool-vrf-vkey({}) did not match supplied pool-vrf-vkey-hash({})", vkey_hash_verify, pool_vrf_vkey_hash));
+                handle_error(format!(
+                    "Hash of pool-vrf-vkey({}) did not match supplied pool-vrf-vkey-hash({})",
+                    vkey_hash_verify, pool_vrf_vkey_hash
+                ));
                 return;
             }
 
@@ -112,18 +120,19 @@ pub(crate) fn verify_message(pool_vrf_vkey: &Path, message: &str, pool_vrf_vkey_
                                         &VerifySuccess {
                                             status: "ok".to_string(),
                                         },
-                                    ).unwrap();
+                                    )
+                                    .unwrap();
                                 }
-                                Err(error) => { handle_error(error) }
+                                Err(error) => handle_error(error),
                             }
                         }
-                        Err(error) => { handle_error(error) }
+                        Err(error) => handle_error(error),
                     }
                 }
-                Err(error) => { handle_error(error) }
+                Err(error) => handle_error(error),
             }
         }
-        Err(error) => { handle_error(error) }
+        Err(error) => handle_error(error),
     }
 }
 
@@ -134,5 +143,6 @@ fn handle_error<T: Display>(error_message: T) {
             status: "error".to_string(),
             error_message: format!("{}", error_message),
         },
-    ).unwrap();
+    )
+    .unwrap();
 }
